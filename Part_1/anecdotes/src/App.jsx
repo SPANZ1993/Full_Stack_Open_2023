@@ -6,10 +6,10 @@ const Button = ({text, buttonHandler}) => <button onClick={buttonHandler}>{text}
 const AnecdoteDisplay = ({anecdotes, votes, i}) => {
   return (
     <>
-    {anecdotes[i]}
-    <div/>
-    has {votes[i]} votes
-    <div/>
+      {anecdotes[i]}
+      <div/>
+      has {votes[i]} votes
+      <div/>
     </>
   )
 }
