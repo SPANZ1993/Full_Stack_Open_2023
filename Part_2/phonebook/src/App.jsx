@@ -2,16 +2,12 @@
 import { useState } from 'react'
 
 
-
-
-
 const Filter = ({searchQuery, onChange}) => 
   <form>
     <div>
       filter shown with: <input value={searchQuery} onChange={onChange}/>
     </div>
   </form>
-
 
 
 const PersonForm = ({newName, newNumber, onSubmit, handleNameChange, handleNumberChange}) => 
@@ -31,10 +27,6 @@ const PersonForm = ({newName, newNumber, onSubmit, handleNameChange, handleNumbe
 const Persons = ({persons, searchQuery}) =>
   persons.filter(person => person.name.toLowerCase().includes(searchQuery.toLowerCase()))
     .map(person => <li key={person.name}>{person.name} {person.number}</li>)
-
-
-
-
 
 
 
@@ -70,9 +62,6 @@ const App = () => {
   const handleQueryChange = (event) => {
     setSearchQuery(event.target.value)
   }
-
-
-
 
 
   return (
