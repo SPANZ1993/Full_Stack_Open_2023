@@ -30,11 +30,50 @@ const Persons = ({persons, searchQuery, onDeleteButtonClick}) => {
 
 
 
+const Notification = ({ message, success}) => {
+
+  const notificationStyle = {
+    color: success ? 'green' : 'red',
+    background: 'lightgrey',
+    fontSize: 20,
+    borderStyle: 'solid',
+    borderRadius: 5,
+    padding: 10,
+    marginBottom: 10
+  }
+
+  if (message === null) {
+    return null
+  }
+
+  return (
+    <div style={notificationStyle}>
+      {message}
+    </div>
+  )
+}
+
+
+
 const App = () => {
   const [persons, setPersons] = useState([]) 
   const [newName, setNewName] = useState('')
   const [newNumber, setNewNumber] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
+  const [notificationMessage, setNotificationMessage] = useState(null)
+  const [notificationSuccess, setNotificationSuccess] = useState(true)
+  const notificationTimeout = 2000
+
+
+  const displayNotification = (message, success) => {
+    setNotificationSuccess(success)
+    setNotificationMessage(
+      message
+    )
+    setTimeout(() => {
+      setNotificationMessage(null)
+    }, notificationTimeout)
+  }
 
 
   const onAddButtonClick = (event) => {
@@ -47,7 +86,7 @@ const App = () => {
 
     if (persons.map(person => person.name).includes(newName)){
       if (persons.find(person => person.name===newName && person.number===newNumber)!==undefined){
-        window.alert(`${newName} is already added to phonebook`)
+        displayNotification(`${newName} is already added to phonebook.`, true)
       }
       else if (window.confirm(`${newName} is already added to phonebook, replace the old number with a new one?`)){
         personService
@@ -56,7 +95,11 @@ const App = () => {
             setPersons(persons.map(person => person.id!==returnedPerson.id ? person : {...person, number: newNumber}))
             setNewName('')
             setNewNumber('')
+            displayNotification(`Updated entry for ${newName}`, true)
           })
+          .catch(error => 
+            displayNotification(`Information of ${newName} has already been removed from server`)
+            )
       }
     }
     else {
@@ -66,11 +109,12 @@ const App = () => {
           setPersons(persons.concat(returnedPerson))
           setNewName('')
           setNewNumber('')
+          displayNotification(`Added ${returnedPerson.name}`, true)
         })
     }
   }
 
-  
+
   const onDeleteButtonClick = (personId) => (event) => {
     event.preventDefault()
     personService
@@ -84,6 +128,9 @@ const App = () => {
             )
         }
       })
+      .catch(error => 
+        displayNotification(`Information of ${newName} has already been removed from server`)
+      )
   }
 
 
@@ -110,6 +157,7 @@ const App = () => {
   return (
     <div>
       <h2>Phonebook</h2>
+      <Notification message={notificationMessage} success={notificationSuccess}/>
       <Filter searchQuery={searchQuery} onChange={handleQueryChange}/>
       <h3>Add a new</h3>
       <PersonForm newName={newName} 
