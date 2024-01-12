@@ -1,6 +1,5 @@
-
-import { useState } from 'react'
-
+import { useState, useEffect } from 'react'
+import axios from 'axios'
 
 const Filter = ({searchQuery, onChange}) => 
   <form>
@@ -62,6 +61,17 @@ const App = () => {
   const handleQueryChange = (event) => {
     setSearchQuery(event.target.value)
   }
+
+
+  useEffect(() => {
+    axios
+      .get('http://localhost:3001/persons')
+      .then(response => {
+        setPersons(response.data)
+      })
+  }, [])
+
+
 
 
   return (
