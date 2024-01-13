@@ -1,6 +1,5 @@
-
-import { useState } from 'react'
-
+import { useState, useEffect } from 'react'
+import personService from './services/persons'
 
 const Filter = ({searchQuery, onChange}) => 
   <form>
@@ -24,10 +23,35 @@ const PersonForm = ({newName, newNumber, onSubmit, handleNameChange, handleNumbe
   </form>
 
 
-const Persons = ({persons, searchQuery}) =>
-  persons.filter(person => person.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    .map(person => <li key={person.name}>{person.name} {person.number}</li>)
+const Persons = ({persons, searchQuery, onDeleteButtonClick}) => {
+  return persons.filter(person => person.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    .map(person => <li key={person.name}>{person.name} {person.number} <button onClick={onDeleteButtonClick(person.id)}>delete</button></li>)
+}
 
+
+
+const Notification = ({ message, success}) => {
+
+  const notificationStyle = {
+    color: success ? 'green' : 'red',
+    background: 'lightgrey',
+    fontSize: 20,
+    borderStyle: 'solid',
+    borderRadius: 5,
+    padding: 10,
+    marginBottom: 10
+  }
+
+  if (message === null) {
+    return null
+  }
+
+  return (
+    <div style={notificationStyle}>
+      {message}
+    </div>
+  )
+}
 
 
 
@@ -36,22 +60,77 @@ const App = () => {
   const [newName, setNewName] = useState('')
   const [newNumber, setNewNumber] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
+  const [notificationMessage, setNotificationMessage] = useState(null)
+  const [notificationSuccess, setNotificationSuccess] = useState(true)
+  const notificationTimeout = 2000
+
+
+  const displayNotification = (message, success) => {
+    setNotificationSuccess(success)
+    setNotificationMessage(
+      message
+    )
+    setTimeout(() => {
+      setNotificationMessage(null)
+    }, notificationTimeout)
+  }
 
 
   const onAddButtonClick = (event) => {
     event.preventDefault()
+
+    const nameObject = {
+      name: newName,
+      number: newNumber
+    }
+
     if (persons.map(person => person.name).includes(newName)){
-      alert(`${newName} is already added to phonebook`)
+      if (persons.find(person => person.name===newName && person.number===newNumber)!==undefined){
+        displayNotification(`${newName} is already added to phonebook.`, true)
+      }
+      else if (window.confirm(`${newName} is already added to phonebook, replace the old number with a new one?`)){
+        personService
+          .update(persons.find(person => person.name===newName).id, nameObject)
+          .then( returnedPerson => {
+            setPersons(persons.map(person => person.id!==returnedPerson.id ? person : {...person, number: newNumber}))
+            setNewName('')
+            setNewNumber('')
+            displayNotification(`Updated entry for ${newName}`, true)
+          })
+          .catch(error => 
+            displayNotification(`Information of ${newName} has already been removed from server`)
+            )
+      }
     }
     else {
-      const nameObject = {
-        name: newName,
-        number: newNumber
-      }
-      setPersons(persons.concat(nameObject))
-      setNewName('')
-      setNewNumber('')
+      personService
+        .create(nameObject)
+        .then( returnedPerson => {
+          setPersons(persons.concat(returnedPerson))
+          setNewName('')
+          setNewNumber('')
+          displayNotification(`Added ${returnedPerson.name}`, true)
+        })
     }
+  }
+
+
+  const onDeleteButtonClick = (personId) => (event) => {
+    event.preventDefault()
+    personService
+      .get(personId)
+      .then(person => {
+        if(window.confirm(`Delete ${person.name}?`)){
+          personService
+          .remove(personId)
+          .then(person =>
+            setPersons(persons.filter(person => person.id != personId))
+            )
+        }
+      })
+      .catch(error => 
+        displayNotification(`Information of ${newName} has already been removed from server`)
+      )
   }
 
 
@@ -64,9 +143,21 @@ const App = () => {
   }
 
 
+  useEffect(() => {
+    personService
+      .getAll()
+      .then(persons => 
+        setPersons(persons)
+    )   
+  }, [])
+
+
+
+
   return (
     <div>
       <h2>Phonebook</h2>
+      <Notification message={notificationMessage} success={notificationSuccess}/>
       <Filter searchQuery={searchQuery} onChange={handleQueryChange}/>
       <h3>Add a new</h3>
       <PersonForm newName={newName} 
@@ -76,7 +167,10 @@ const App = () => {
         handleNumberChange={handleInputChange(setNewNumber)}
       />
       <h3>Numbers</h3>
-      <Persons persons={persons} searchQuery={searchQuery}/>
+      <Persons persons={persons} 
+        searchQuery={searchQuery} 
+        onDeleteButtonClick={onDeleteButtonClick}
+      />
     </div>
   )
 }
